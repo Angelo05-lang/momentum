@@ -3,187 +3,305 @@ import { useNavigate } from "react-router-dom";
 
 const containerStyle = {
   maxWidth: "600px",
-  margin: "40px auto",
+  margin: "50px auto",
   padding: "20px",
-  border: "1px solid #ddd",
+  backgroundColor: "#fff",
   borderRadius: "10px",
-  boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-  backgroundColor: "#f9f9f9"
+  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+  fontFamily: "Arial, sans-serif",
 };
 
-const profileCardStyle = {
+const titleStyle = {
+  textAlign: "center",
+  fontSize: "24px",
+  marginBottom: "20px",
+  color: "#333",
+};
+
+const profileListStyle = {
+  listStyle: "none",
+  padding: 0,
+  margin: 0,
+};
+
+const profileItemStyle = {
   display: "flex",
   justifyContent: "space-between",
   alignItems: "center",
-  padding: "15px",
-  borderBottom: "1px solid #eee"
+  backgroundColor: "#f9f9f9",
+  borderRadius: "6px",
+  padding: "12px 15px",
+  marginBottom: "10px",
+  border: "1px solid #e0e0e0",
+  boxShadow: "0 2px 4px rgba(0,0,0,0.06)",
+  cursor: "pointer",
 };
 
 const profileInfoStyle = {
-  flex: "1"
+  fontSize: "15px",
+  color: "#555",
+};
+
+const buttonGroupStyle = {
+  display: "flex",
+  gap: "8px",
 };
 
 const buttonStyle = {
-  padding: "8px 12px",
-  margin: "0 5px",
+  padding: "8px 16px",
   border: "none",
   borderRadius: "5px",
-  backgroundColor: "#007bff",
-  color: "white",
   cursor: "pointer",
-  fontSize: "16px"
+  fontSize: "14px",
+};
+
+const selectButtonStyle = {
+  ...buttonStyle,
+  backgroundColor: "#007bff",
+  color: "#fff",
 };
 
 const deleteButtonStyle = {
   ...buttonStyle,
-  backgroundColor: "#dc3545"
+  backgroundColor: "#dc3545",
+  color: "#fff",
 };
 
-const addButtonStyle = {
-  ...buttonStyle,
-  backgroundColor: "#28a745",
+const createButtonStyle = {
+  display: "block",
   width: "100%",
-  marginTop: "20px"
+  padding: "12px",
+  backgroundColor: "#28a745",
+  color: "#fff",
+  border: "none",
+  borderRadius: "5px",
+  cursor: "pointer",
+  fontSize: "16px",
+  marginTop: "20px",
+};
+
+// Stili per il form inline
+const formContainerStyle = {
+  marginTop: "20px",
+  backgroundColor: "#f9f9f9",
+  borderRadius: "6px",
+  padding: "15px",
+  border: "1px solid #e0e0e0",
+};
+
+const formRowStyle = {
+  display: "flex",
+  gap: "10px",
+  marginBottom: "10px",
+};
+
+const labelStyle = {
+  fontWeight: "bold",
+  marginBottom: "5px",
+  color: "#444",
+};
+
+const inputStyle = {
+  flex: 1,
+  padding: "10px",
+  borderRadius: "5px",
+  border: "1px solid #ccc",
+  fontSize: "14px",
+};
+
+const formButtonContainerStyle = {
+  display: "flex",
+  justifyContent: "space-between",
+  marginTop: "10px",
+};
+
+const cancelButtonStyle = {
+  ...buttonStyle,
+  backgroundColor: "#6c757d",
+  color: "#fff",
+};
+
+const saveButtonStyle = {
+  ...buttonStyle,
+  backgroundColor: "#007bff",
+  color: "#fff",
 };
 
 function Home() {
   const navigate = useNavigate();
-  // Leggiamo gli utenti da localStorage, se non ci sono usiamo un array di default
-  const [users, setUsers] = useState(() => {
-    const savedUsers = localStorage.getItem("users");
-    return savedUsers
-      ? JSON.parse(savedUsers)
+
+  // Profili iniziali (se vuoi partire vuoto, usa [])
+  const [profiles, setProfiles] = useState(() => {
+    const saved = localStorage.getItem("profiles");
+    return saved
+      ? JSON.parse(saved)
       : [
           { id: 1, name: "Mario", age: 30, weight: 75, height: 175 },
-          { id: 2, name: "Luigi", age: 28, weight: 70, height: 180 }
+          { id: 2, name: "Luigi", age: 25, weight: 70, height: 180 },
         ];
   });
 
-  // Aggiorna localStorage quando `users` cambia
+  // Salva i profili ogni volta che cambiano
   useEffect(() => {
-    localStorage.setItem("users", JSON.stringify(users));
-  }, [users]);
+    localStorage.setItem("profiles", JSON.stringify(profiles));
+  }, [profiles]);
 
-  // Stati per gestire il form di creazione profilo
+  // Stato per mostrare o nascondere il form
   const [showForm, setShowForm] = useState(false);
-  const [name, setName] = useState("");
-  const [age, setAge] = useState("");
-  const [weight, setWeight] = useState("");
-  const [height, setHeight] = useState("");
 
-  // Mostra/nasconde il form
-  const toggleForm = () => {
-    setShowForm(!showForm);
-    // Se stiamo aprendo il form, puliamo i campi
-    if (!showForm) {
-      setName("");
-      setAge("");
-      setWeight("");
-      setHeight("");
-    }
-  };
+  // Stato per i campi del nuovo profilo
+  const [newProfile, setNewProfile] = useState({
+    name: "",
+    age: "",
+    weight: "",
+    height: "",
+  });
 
-  // Crea un nuovo profilo
-  const addUser = (e) => {
-    e.preventDefault();
-    if (!name.trim()) return;
-
-    const newUser = {
-      id: Date.now(),
-      name,
-      age: parseInt(age, 10),
-      weight: parseInt(weight, 10),
-      height: parseInt(height, 10)
-    };
-    setUsers([...users, newUser]);
-    // Chiudi il form
-    setShowForm(false);
+  // Seleziona un profilo e vai alla Dashboard
+  const handleSelect = (profile, e) => {
+    // Se l'utente clicca sul rigo intero, potresti voler fare la selezione
+    localStorage.setItem("currentProfile", JSON.stringify(profile));
+    navigate("/dashboard");
   };
 
   // Elimina un profilo
-  const deleteUser = (id) => {
-    setUsers(users.filter((u) => u.id !== id));
+  const handleDelete = (id, e) => {
+    e.stopPropagation(); // Evita che il click selezioni il profilo
+    setProfiles(profiles.filter((p) => p.id !== id));
   };
 
-  // Seleziona un profilo
-  const selectUser = (id) => {
-    navigate(`/dashboard/${id}`);
+  // Mostra o nasconde il form
+  const toggleForm = () => {
+    setShowForm(!showForm);
+    if (!showForm) {
+      // Reset campi se stiamo aprendo il form
+      setNewProfile({ name: "", age: "", weight: "", height: "" });
+    }
+  };
+
+  // Salva il nuovo profilo
+  const handleSaveProfile = () => {
+    const { name, age, weight, height } = newProfile;
+    if (!name || !age || !weight || !height) {
+      alert("Compila tutti i campi!");
+      return;
+    }
+    const profileToAdd = {
+      id: Date.now(),
+      name,
+      age: Number(age),
+      weight: Number(weight),
+      height: Number(height),
+    };
+    setProfiles([...profiles, profileToAdd]);
+    setShowForm(false);
+  };
+
+  // Annulla la creazione del profilo
+  const handleCancel = () => {
+    setShowForm(false);
+    setNewProfile({ name: "", age: "", weight: "", height: "" });
   };
 
   return (
     <div style={containerStyle}>
-      <h1 style={{ textAlign: "center" }}>Seleziona un Profilo</h1>
-      {users.map((user) => (
-        <div key={user.id} style={profileCardStyle}>
-          <div style={profileInfoStyle}>
-            <h3 style={{ margin: "0 0 5px 0" }}>{user.name}</h3>
-            <p style={{ margin: 0 }}>
-              {user.age} anni, {user.weight} kg, {user.height} cm
-            </p>
+      <h1 style={titleStyle}>Seleziona un Profilo</h1>
+
+      <ul style={profileListStyle}>
+        {profiles.map((profile) => (
+          <li
+            key={profile.id}
+            style={profileItemStyle}
+            onClick={(e) => handleSelect(profile, e)}
+          >
+            <span style={profileInfoStyle}>
+              {profile.name}, {profile.age}y, {profile.weight}kg, {profile.height}cm
+            </span>
+            <div style={buttonGroupStyle}>
+              <button
+                style={selectButtonStyle}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSelect(profile, e);
+                }}
+              >
+                Seleziona
+              </button>
+              <button
+                style={deleteButtonStyle}
+                onClick={(e) => handleDelete(profile.id, e)}
+              >
+                Elimina
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      {!showForm && (
+        <button style={createButtonStyle} onClick={toggleForm}>
+          + Crea Nuovo Profilo
+        </button>
+      )}
+
+      {showForm && (
+        <div style={formContainerStyle}>
+          <h2 style={{ textAlign: "center", marginBottom: "15px" }}>
+            Crea un Nuovo Profilo
+          </h2>
+          <div style={formRowStyle}>
+            <label style={labelStyle}>Nome</label>
+            <input
+              type="text"
+              style={inputStyle}
+              value={newProfile.name}
+              onChange={(e) =>
+                setNewProfile({ ...newProfile, name: e.target.value })
+              }
+            />
           </div>
-          <div>
-            <button onClick={() => selectUser(user.id)} style={buttonStyle}>
-              Seleziona
+          <div style={formRowStyle}>
+            <label style={labelStyle}>Età</label>
+            <input
+              type="number"
+              style={inputStyle}
+              value={newProfile.age}
+              onChange={(e) =>
+                setNewProfile({ ...newProfile, age: e.target.value })
+              }
+            />
+          </div>
+          <div style={formRowStyle}>
+            <label style={labelStyle}>Peso (kg)</label>
+            <input
+              type="number"
+              style={inputStyle}
+              value={newProfile.weight}
+              onChange={(e) =>
+                setNewProfile({ ...newProfile, weight: e.target.value })
+              }
+            />
+          </div>
+          <div style={formRowStyle}>
+            <label style={labelStyle}>Altezza (cm)</label>
+            <input
+              type="number"
+              style={inputStyle}
+              value={newProfile.height}
+              onChange={(e) =>
+                setNewProfile({ ...newProfile, height: e.target.value })
+              }
+            />
+          </div>
+          <div style={formButtonContainerStyle}>
+            <button style={cancelButtonStyle} onClick={handleCancel}>
+              Annulla
             </button>
-            <button onClick={() => deleteUser(user.id)} style={deleteButtonStyle}>
-              Elimina
+            <button style={saveButtonStyle} onClick={handleSaveProfile}>
+              Crea Profilo
             </button>
           </div>
         </div>
-      ))}
-
-      {/* Pulsante per aprire/chiudere il form */}
-      <button onClick={toggleForm} style={addButtonStyle}>
-        {showForm ? "Annulla" : "+ Crea Nuovo Profilo"}
-      </button>
-
-      {/* Form di creazione profilo (inline) */}
-      {showForm && (
-        <form onSubmit={addUser} style={{ marginTop: "20px" }}>
-          <div style={{ marginBottom: "10px" }}>
-            <label>Nome: </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              style={{ width: "100%", padding: "8px", borderRadius: "5px" }}
-            />
-          </div>
-          <div style={{ marginBottom: "10px" }}>
-            <label>Età: </label>
-            <input
-              type="number"
-              value={age}
-              onChange={(e) => setAge(e.target.value)}
-              required
-              style={{ width: "100%", padding: "8px", borderRadius: "5px" }}
-            />
-          </div>
-          <div style={{ marginBottom: "10px" }}>
-            <label>Peso (kg): </label>
-            <input
-              type="number"
-              value={weight}
-              onChange={(e) => setWeight(e.target.value)}
-              required
-              style={{ width: "100%", padding: "8px", borderRadius: "5px" }}
-            />
-          </div>
-          <div style={{ marginBottom: "10px" }}>
-            <label>Altezza (cm): </label>
-            <input
-              type="number"
-              value={height}
-              onChange={(e) => setHeight(e.target.value)}
-              required
-              style={{ width: "100%", padding: "8px", borderRadius: "5px" }}
-            />
-          </div>
-          <button type="submit" style={{ ...addButtonStyle, backgroundColor: "#007bff" }}>
-            Crea Profilo
-          </button>
-        </form>
       )}
     </div>
   );

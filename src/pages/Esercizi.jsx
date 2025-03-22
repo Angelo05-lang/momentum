@@ -1,30 +1,28 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import Timer from "../components/Timer";
 
-// Stili generali per il contenitore e il titolo
 const containerStyle = {
   maxWidth: "800px",
   margin: "40px auto",
   padding: "20px",
   backgroundColor: "#fff",
   borderRadius: "10px",
-  boxShadow: "0 4px 12px rgba(0,0,0,0.15)"
+  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+  fontFamily: "Arial, sans-serif",
 };
 
 const titleStyle = {
   textAlign: "center",
-  fontFamily: "Arial, sans-serif",
+  fontSize: "24px",
+  marginBottom: "20px",
   color: "#333",
-  marginBottom: "20px"
 };
 
-// Stile per il form di aggiunta
 const formStyle = {
   marginBottom: "30px",
   display: "flex",
   flexDirection: "column",
-  gap: "10px"
+  gap: "10px",
 };
 
 const inputStyle = {
@@ -32,56 +30,63 @@ const inputStyle = {
   padding: "10px",
   borderRadius: "5px",
   border: "1px solid #ccc",
-  fontSize: "16px"
+  fontSize: "16px",
 };
 
-// Stile per la tabella principale
+const selectStyle = {
+  ...inputStyle,
+  width: "200px",
+};
+
 const tableStyle = {
   width: "100%",
   borderCollapse: "collapse",
-  marginTop: "20px"
+  marginTop: "20px",
 };
 
 const thStyle = {
   backgroundColor: "#007bff",
   color: "#fff",
   padding: "10px",
-  textAlign: "left"
+  textAlign: "left",
 };
 
 const tdStyle = {
   border: "1px solid #ddd",
   padding: "10px",
-  textAlign: "left"
+  textAlign: "left",
 };
 
-// Stile per i pulsanti
 const buttonStyle = {
   padding: "10px 20px",
   border: "none",
   borderRadius: "5px",
   cursor: "pointer",
   fontSize: "16px",
-  minWidth: "120px"
+  minWidth: "120px",
+  marginRight: "10px",
 };
 
 const primaryButtonStyle = {
   ...buttonStyle,
   backgroundColor: "#007bff",
-  color: "#fff"
+  color: "#fff",
 };
 
 const successButtonStyle = {
   ...buttonStyle,
   backgroundColor: "#28a745",
-  color: "#fff"
+  color: "#fff",
 };
 
 const dangerButtonStyle = {
   ...buttonStyle,
   backgroundColor: "#dc3545",
-  color: "#fff"
+  color: "#fff",
 };
+
+// Aggiorna l'array dei giorni in italiano
+const daysOfWeek = ["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica"];
 
 function Esercizi() {
   const { userId } = useParams();
@@ -99,91 +104,80 @@ function Esercizi() {
     }
   }, [userId]);
 
-  // Stato per la lista degli esercizi
-  // Ogni esercizio: { id, name, reps, kg, note }
+  // Stato per la lista degli esercizi (ogni esercizio ha: id, name, reps, kg, note, day)
   const [exercises, setExercises] = useState(() => {
     const saved = localStorage.getItem(storageKey);
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Stati per il form di aggiunta di un nuovo esercizio
-  const [newExerciseName, setNewExerciseName] = useState("");
-  const [newReps, setNewReps] = useState("");
-  const [newKg, setNewKg] = useState("");
-  const [newNote, setNewNote] = useState("");
+  // Stato per il form per aggiungere un nuovo esercizio
+  const [newExercise, setNewExercise] = useState({
+    name: "",
+    reps: "",
+    kg: "",
+    note: "",
+  });
+  // Ora il giorno selezionato viene usato anche per assegnare il nuovo esercizio
+  const [selectedDay, setSelectedDay] = useState(daysOfWeek[0]);
 
-  // Stato per l'editing dell'esercizio
+  // Stato per l'editing di un esercizio
   const [editingExerciseId, setEditingExerciseId] = useState(null);
-  const [editExerciseName, setEditExerciseName] = useState("");
-  const [editReps, setEditReps] = useState("");
-  const [editKg, setEditKg] = useState("");
-  const [editNote, setEditNote] = useState("");
+  const [editExercise, setEditExercise] = useState({
+    name: "",
+    reps: "",
+    kg: "",
+    note: "",
+    day: "",
+  });
 
-  // Stati per il timer
-  const [timerActive, setTimerActive] = useState(false);
-  const [timerDuration, setTimerDuration] = useState(60); // Durata predefinita in secondi
-
-  // Aggiorna il localStorage ogni volta che cambiano gli esercizi
   useEffect(() => {
     localStorage.setItem(storageKey, JSON.stringify(exercises));
   }, [exercises, storageKey]);
 
-  // Funzione per aggiungere un nuovo esercizio
+  // Funzione per aggiungere un nuovo esercizio; usa il giorno selezionato
   const handleAddExercise = (e) => {
     e.preventDefault();
-    if (!newExerciseName.trim() || !newReps || !newKg) return;
-    const newExercise = {
+    if (!newExercise.name || !newExercise.reps || !newExercise.kg) return;
+    const exerciseToAdd = {
       id: Date.now(),
-      name: newExerciseName.trim(),
-      reps: newReps,
-      kg: newKg,
-      note: newNote.trim()
+      ...newExercise,
+      note: newExercise.note || "-",
+      day: selectedDay, // usa il giorno selezionato
     };
-    setExercises([...exercises, newExercise]);
-    setNewExerciseName("");
-    setNewReps("");
-    setNewKg("");
-    setNewNote("");
+    setExercises([...exercises, exerciseToAdd]);
+    setNewExercise({ name: "", reps: "", kg: "", note: "" });
   };
 
   // Funzione per eliminare un esercizio
-  const handleDeleteExercise = (exerciseId) => {
-    setExercises(exercises.filter((ex) => ex.id !== exerciseId));
+  const handleDeleteExercise = (id) => {
+    setExercises(exercises.filter((ex) => ex.id !== id));
   };
 
-  // Inizia l'editing per un esercizio
+  // Inizia la modalità di editing per un esercizio
   const startEditingExercise = (exercise) => {
     setEditingExerciseId(exercise.id);
-    setEditExerciseName(exercise.name);
-    setEditReps(exercise.reps);
-    setEditKg(exercise.kg);
-    setEditNote(exercise.note);
+    setEditExercise({ ...exercise });
   };
 
-  // Salva le modifiche apportate all'esercizio
+  // Salva le modifiche apportate
   const handleSaveEdit = (e) => {
     e.preventDefault();
     const updatedExercises = exercises.map((ex) =>
-      ex.id === editingExerciseId
-        ? { ...ex, name: editExerciseName, reps: editReps, kg: editKg, note: editNote }
-        : ex
+      ex.id === editingExerciseId ? { ...editExercise } : ex
     );
     setExercises(updatedExercises);
     setEditingExerciseId(null);
-    setEditExerciseName("");
-    setEditReps("");
-    setEditKg("");
-    setEditNote("");
+    setEditExercise({ name: "", reps: "", kg: "", note: "", day: "" });
   };
 
-  // Annulla la modalità di modifica
+  // Annulla la modifica
   const cancelEdit = () => {
     setEditingExerciseId(null);
-    setEditExerciseName("");
-    setEditReps("");
-    setEditKg("");
-    setEditNote("");
+    setEditExercise({ name: "", reps: "", kg: "", note: "", day: "" });
   };
+
+  // Filtra gli esercizi in base al giorno selezionato
+  const filteredExercises = exercises.filter((ex) => ex.day === selectedDay);
 
   return (
     <div style={containerStyle}>
@@ -195,144 +189,181 @@ function Esercizi() {
           ? `Esercizi Personalizzati per ${userName}`
           : `Esercizi per Utente ${userId}`}
       </h2>
-      
-      {/* Sezione Timer */}
+
+      {/* Selettore per il giorno */}
       <div style={{ textAlign: "center", marginBottom: "20px" }}>
-        <input
-          type="number"
-          placeholder="Durata Timer (sec)"
-          value={timerDuration}
-          onChange={(e) => setTimerDuration(e.target.value)}
-          style={{ ...inputStyle, width: "200px", marginRight: "10px" }}
-        />
-        <button onClick={() => setTimerActive(true)} style={primaryButtonStyle}>
-          Avvia Timer
-        </button>
+        <label style={{ fontWeight: "bold", marginRight: "10px" }}>
+          Seleziona giorno:
+        </label>
+        <select
+          value={selectedDay}
+          onChange={(e) => setSelectedDay(e.target.value)}
+          style={selectStyle}
+        >
+          {daysOfWeek.map((day) => (
+            <option key={day} value={day}>
+              {day}
+            </option>
+          ))}
+        </select>
       </div>
-      {timerActive && (
-        <div style={{ textAlign: "center", marginBottom: "20px" }}>
-          <Timer
-            duration={Number(timerDuration)}
-            onComplete={() => setTimerActive(false)}
-          />
+
+      {/* Visualizzazione degli esercizi per il giorno selezionato */}
+      {filteredExercises.length === 0 ? (
+        <p style={{ textAlign: "center", color: "#777" }}>
+          Nessun esercizio assegnato a {selectedDay}.
+        </p>
+      ) : (
+        <div style={{ overflowX: "auto" }}>
+          <table style={tableStyle}>
+            <thead>
+              <tr>
+                <th style={thStyle}>Esercizio</th>
+                <th style={thStyle}>Reps</th>
+                <th style={thStyle}>Kg</th>
+                <th style={thStyle}>Note</th>
+                <th style={thStyle}>Giorno</th>
+                <th style={thStyle}>Azioni</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredExercises.map((ex) => (
+                <tr key={ex.id}>
+                  {editingExerciseId === ex.id ? (
+                    <>
+                      <td style={tdStyle}>
+                        <input
+                          type="text"
+                          value={editExercise.name}
+                          onChange={(e) =>
+                            setEditExercise({ ...editExercise, name: e.target.value })
+                          }
+                          style={inputStyle}
+                        />
+                      </td>
+                      <td style={tdStyle}>
+                        <input
+                          type="text"
+                          value={editExercise.reps}
+                          onChange={(e) =>
+                            setEditExercise({ ...editExercise, reps: e.target.value })
+                          }
+                          style={inputStyle}
+                        />
+                      </td>
+                      <td style={tdStyle}>
+                        <input
+                          type="text"
+                          value={editExercise.kg}
+                          onChange={(e) =>
+                            setEditExercise({ ...editExercise, kg: e.target.value })
+                          }
+                          style={inputStyle}
+                        />
+                      </td>
+                      <td style={tdStyle}>
+                        <input
+                          type="text"
+                          value={editExercise.note}
+                          onChange={(e) =>
+                            setEditExercise({ ...editExercise, note: e.target.value })
+                          }
+                          style={inputStyle}
+                        />
+                      </td>
+                      <td style={tdStyle}>
+                        <select
+                          value={editExercise.day || selectedDay}
+                          onChange={(e) =>
+                            setEditExercise({ ...editExercise, day: e.target.value })
+                          }
+                          style={selectStyle}
+                        >
+                          {daysOfWeek.map((day) => (
+                            <option key={day} value={day}>
+                              {day}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td style={tdStyle}>
+                        <button onClick={handleSaveEdit} style={primaryButtonStyle}>
+                          Salva
+                        </button>
+                        <button onClick={cancelEdit} style={{ ...dangerButtonStyle, marginLeft: "5px" }}>
+                          Annulla
+                        </button>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td style={tdStyle}>{ex.name}</td>
+                      <td style={tdStyle}>{ex.reps}</td>
+                      <td style={tdStyle}>{ex.kg}</td>
+                      <td style={tdStyle}>{ex.note}</td>
+                      <td style={tdStyle}>{ex.day}</td>
+                      <td style={tdStyle}>
+                        <button onClick={() => startEditingExercise(ex)} style={primaryButtonStyle}>
+                          Modifica
+                        </button>
+                        <button onClick={() => handleDeleteExercise(ex.id)} style={{ ...dangerButtonStyle, marginLeft: "5px" }}>
+                          Elimina
+                        </button>
+                      </td>
+                    </>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
+      {/* Form per aggiungere un nuovo esercizio per il giorno selezionato */}
       <form onSubmit={handleAddExercise} style={formStyle}>
+        <h3 style={{ textAlign: "center" }}>
+          Aggiungi nuovo esercizio per {selectedDay}
+        </h3>
         <input
           type="text"
           placeholder="Nome esercizio"
-          value={newExerciseName}
-          onChange={(e) => setNewExerciseName(e.target.value)}
+          value={newExercise.name}
+          onChange={(e) =>
+            setNewExercise({ ...newExercise, name: e.target.value })
+          }
           style={inputStyle}
         />
         <input
           type="text"
           placeholder="Reps (es. 8/6/4)"
-          value={newReps}
-          onChange={(e) => setNewReps(e.target.value)}
+          value={newExercise.reps}
+          onChange={(e) =>
+            setNewExercise({ ...newExercise, reps: e.target.value })
+          }
           style={inputStyle}
         />
         <input
           type="text"
           placeholder="Kg (es. 10/12/14)"
-          value={newKg}
-          onChange={(e) => setNewKg(e.target.value)}
+          value={newExercise.kg}
+          onChange={(e) =>
+            setNewExercise({ ...newExercise, kg: e.target.value })
+          }
           style={inputStyle}
         />
         <input
           type="text"
           placeholder="Note (opzionali)"
-          value={newNote}
-          onChange={(e) => setNewNote(e.target.value)}
+          value={newExercise.note}
+          onChange={(e) =>
+            setNewExercise({ ...newExercise, note: e.target.value })
+          }
           style={inputStyle}
         />
         <button type="submit" style={successButtonStyle}>
           Aggiungi Esercizio
         </button>
       </form>
-      {exercises.length === 0 ? (
-        <p style={{ textAlign: "center", color: "#777" }}>
-          Nessun esercizio aggiunto.
-        </p>
-      ) : (
-        <table style={tableStyle}>
-          <thead>
-            <tr>
-              <th style={thStyle}>Esercizio</th>
-              <th style={thStyle}>Reps</th>
-              <th style={thStyle}>Kg</th>
-              <th style={thStyle}>Note</th>
-              <th style={thStyle}>Azioni</th>
-            </tr>
-          </thead>
-          <tbody>
-            {exercises.map((ex) => (
-              <tr key={ex.id}>
-                {editingExerciseId === ex.id ? (
-                  <>
-                    <td style={tdStyle}>
-                      <input
-                        type="text"
-                        value={editExerciseName}
-                        onChange={(e) => setEditExerciseName(e.target.value)}
-                        style={inputStyle}
-                      />
-                    </td>
-                    <td style={tdStyle}>
-                      <input
-                        type="text"
-                        value={editReps}
-                        onChange={(e) => setEditReps(e.target.value)}
-                        style={inputStyle}
-                      />
-                    </td>
-                    <td style={tdStyle}>
-                      <input
-                        type="text"
-                        value={editKg}
-                        onChange={(e) => setEditKg(e.target.value)}
-                        style={inputStyle}
-                      />
-                    </td>
-                    <td style={tdStyle}>
-                      <input
-                        type="text"
-                        value={editNote}
-                        onChange={(e) => setEditNote(e.target.value)}
-                        style={inputStyle}
-                      />
-                    </td>
-                    <td style={tdStyle}>
-                      <button onClick={handleSaveEdit} style={primaryButtonStyle}>
-                        Salva
-                      </button>
-                      <button onClick={cancelEdit} style={{ ...dangerButtonStyle, marginLeft: "5px" }}>
-                        Annulla
-                      </button>
-                    </td>
-                  </>
-                ) : (
-                  <>
-                    <td style={tdStyle}>{ex.name}</td>
-                    <td style={tdStyle}>{ex.reps}</td>
-                    <td style={tdStyle}>{ex.kg}</td>
-                    <td style={tdStyle}>{ex.note || "-"}</td>
-                    <td style={tdStyle}>
-                      <button onClick={() => startEditingExercise(ex)} style={primaryButtonStyle}>
-                        Modifica
-                      </button>
-                      <button onClick={() => handleDeleteExercise(ex.id)} style={{ ...dangerButtonStyle, marginLeft: "5px" }}>
-                        Elimina
-                      </button>
-                    </td>
-                  </>
-                )}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
     </div>
   );
 }

@@ -1,137 +1,184 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
-// Stile unificato per i pulsanti
+const containerStyle = {
+  maxWidth: "600px",
+  margin: "40px auto",
+  padding: "20px",
+  backgroundColor: "#fff",
+  borderRadius: "10px",
+  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+  fontFamily: "Arial, sans-serif",
+  textAlign: "center",
+};
+
+const labelStyle = {
+  fontWeight: "bold",
+  marginRight: "10px",
+};
+
+const inputStyle = {
+  padding: "8px",
+  borderRadius: "5px",
+  border: "1px solid #ccc",
+  fontSize: "16px",
+  margin: "5px 0",
+};
+
 const buttonStyle = {
   padding: "10px 20px",
   margin: "10px",
   border: "none",
   borderRadius: "5px",
-  backgroundColor: "#007bff",
-  color: "white",
   cursor: "pointer",
   fontSize: "16px",
-  minWidth: "120px"
 };
 
-function Profilo() {
-  const { userId } = useParams();
-  const navigate = useNavigate();
-  const numericUserId = parseInt(userId, 10);
-  
-  const [user, setUser] = useState(null);
-  const [editMode, setEditMode] = useState(false);
-  
-  // Stati per il form di editing
-  const [name, setName] = useState("");
-  const [age, setAge] = useState("");
-  const [weight, setWeight] = useState("");
-  const [height, setHeight] = useState("");
+const saveButtonStyle = {
+  ...buttonStyle,
+  backgroundColor: "#28a745",
+  color: "#fff",
+};
 
-  // Carica i dati dell'utente dal localStorage
+const cancelButtonStyle = {
+  ...buttonStyle,
+  backgroundColor: "#dc3545",
+  color: "#fff",
+};
+
+const editButtonStyle = {
+  ...buttonStyle,
+  backgroundColor: "#007bff",
+  color: "#fff",
+};
+
+const Profilo = () => {
+  const navigate = useNavigate();
+  const [currentProfile, setCurrentProfile] = useState(null);
+  const [editMode, setEditMode] = useState(false);
+  const [editedProfile, setEditedProfile] = useState(null);
+
   useEffect(() => {
-    const savedUsers = localStorage.getItem("users");
-    if (savedUsers) {
-      const usersArray = JSON.parse(savedUsers);
-      const foundUser = usersArray.find(u => u.id === numericUserId);
-      if (foundUser) {
-        setUser(foundUser);
-        setName(foundUser.name);
-        setAge(foundUser.age);
-        setWeight(foundUser.weight);
-        setHeight(foundUser.height);
-      }
+    const savedProfile = localStorage.getItem("currentProfile");
+    if (!savedProfile) {
+      navigate("/");
+    } else {
+      const profile = JSON.parse(savedProfile);
+      setCurrentProfile(profile);
+      setEditedProfile(profile);
     }
-  }, [numericUserId]);
+  }, [navigate]);
+
+  const handleChange = (field, value) => {
+    setEditedProfile({
+      ...editedProfile,
+      [field]: value,
+    });
+  };
 
   const handleSave = () => {
-    const updatedUser = {
-      ...user,
-      name,
-      age: parseInt(age, 10),
-      weight: parseFloat(weight),
-      height: parseFloat(height)
-    };
-
-    // Aggiorna l'utente nell'array salvato nel localStorage
-    const savedUsers = localStorage.getItem("users");
-    if (savedUsers) {
-      const usersArray = JSON.parse(savedUsers);
-      const updatedUsers = usersArray.map(u =>
-        u.id === numericUserId ? updatedUser : u
-      );
-      localStorage.setItem("users", JSON.stringify(updatedUsers));
-    }
-    setUser(updatedUser);
+    // Salva il profilo modificato in localStorage e aggiorna lo stato
+    localStorage.setItem("currentProfile", JSON.stringify(editedProfile));
+    setCurrentProfile(editedProfile);
     setEditMode(false);
   };
 
-  if (!user) {
-    return <div>Utente non trovato</div>;
+  const handleCancel = () => {
+    setEditedProfile(currentProfile);
+    setEditMode(false);
+  };
+
+  if (!currentProfile) {
+    return <p>Caricamento...</p>;
   }
 
   return (
-    <div>
-      {/* Pulsante "Indietro" stilizzato */}
-      <button onClick={() => navigate(-1)} style={buttonStyle}>
-        Indietro
-      </button>
-      
-      <h2>Profilo di {user.name}</h2>
+    <div style={containerStyle}>
+      <h1>Profilo Utente</h1>
       {editMode ? (
         <div>
-          <div>
-            <label>Nome: </label>
-            <input 
-              value={name} 
-              onChange={(e) => setName(e.target.value)} 
+          <p>
+            <label style={labelStyle}>Nome:</label>
+            <input
+              type="text"
+              value={editedProfile.name}
+              onChange={(e) => handleChange("name", e.target.value)}
+              style={inputStyle}
             />
-          </div>
-          <div>
-            <label>Età: </label>
-            <input 
-              type="number" 
-              value={age} 
-              onChange={(e) => setAge(e.target.value)} 
+          </p>
+          <p>
+            <label style={labelStyle}>Età:</label>
+            <input
+              type="number"
+              value={editedProfile.age}
+              onChange={(e) => handleChange("age", e.target.value)}
+              style={inputStyle}
             />
-          </div>
-          <div>
-            <label>Peso (kg): </label>
-            <input 
-              type="number" 
-              value={weight} 
-              onChange={(e) => setWeight(e.target.value)} 
+          </p>
+          <p>
+            <label style={labelStyle}>Peso (kg):</label>
+            <input
+              type="number"
+              value={editedProfile.weight}
+              onChange={(e) => handleChange("weight", e.target.value)}
+              style={inputStyle}
             />
-          </div>
-          <div>
-            <label>Altezza (cm): </label>
-            <input 
-              type="number" 
-              value={height} 
-              onChange={(e) => setHeight(e.target.value)} 
+          </p>
+          <p>
+            <label style={labelStyle}>Altezza (cm):</label>
+            <input
+              type="number"
+              value={editedProfile.height}
+              onChange={(e) => handleChange("height", e.target.value)}
+              style={inputStyle}
             />
-          </div>
-          <button onClick={handleSave} style={buttonStyle}>Salva</button>
-          <button 
-            onClick={() => setEditMode(false)} 
-            style={{ ...buttonStyle, backgroundColor: "#6c757d" }}
-          >
+          </p>
+          <p>
+            <label style={labelStyle}>Obiettivo:</label>
+            <input
+              type="text"
+              value={editedProfile.goal}
+              onChange={(e) => handleChange("goal", e.target.value)}
+              style={inputStyle}
+            />
+          </p>
+          <button onClick={handleSave} style={saveButtonStyle}>
+            Salva
+          </button>
+          <button onClick={handleCancel} style={cancelButtonStyle}>
             Annulla
           </button>
         </div>
       ) : (
         <div>
-          <p><strong>Nome:</strong> {user.name}</p>
-          <p><strong>Età:</strong> {user.age} anni</p>
-          <p><strong>Peso:</strong> {user.weight} kg</p>
-          <p><strong>Altezza:</strong> {user.height} cm</p>
-          <button onClick={() => setEditMode(true)} style={buttonStyle}>
+          <p>
+            <strong>Nome:</strong> {currentProfile.name}
+          </p>
+          <p>
+            <strong>Età:</strong> {currentProfile.age} anni
+          </p>
+          <p>
+            <strong>Peso:</strong> {currentProfile.weight} kg
+          </p>
+          <p>
+            <strong>Altezza:</strong> {currentProfile.height} cm
+          </p>
+          <p>
+            <strong>Obiettivo:</strong> {currentProfile.goal}
+          </p>
+          <button onClick={() => setEditMode(true)} style={editButtonStyle}>
             Modifica
           </button>
         </div>
       )}
+      <button
+        onClick={() => navigate("/dashboard")}
+        style={{ ...buttonStyle, backgroundColor: "#007bff", color: "#fff" }}
+      >
+        Torna alla Dashboard
+      </button>
     </div>
   );
-}
+};
 
 export default Profilo;

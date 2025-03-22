@@ -9,14 +9,14 @@ const containerStyle = {
   backgroundColor: "#fdfdfd",
   borderRadius: "10px",
   boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+  fontFamily: "Arial, sans-serif",
 };
 
 const titleStyle = {
   textAlign: "center",
-  fontFamily: "Arial, sans-serif",
-  color: "#333",
-  marginBottom: "20px",
   fontSize: "24px",
+  marginBottom: "20px",
+  color: "#333",
 };
 
 const inputStyle = {
@@ -26,6 +26,11 @@ const inputStyle = {
   border: "1px solid #ccc",
   fontSize: "16px",
   marginBottom: "10px",
+};
+
+const selectStyle = {
+  ...inputStyle,
+  width: "200px",
 };
 
 const tableStyle = {
@@ -63,48 +68,63 @@ const primaryButtonStyle = {
   color: "#fff",
 };
 
-const Dieta = () => {
+const daysOfWeek = [
+  "Lunedì",
+  "Martedì",
+  "Mercoledì",
+  "Giovedì",
+  "Venerdì",
+  "Sabato",
+  "Domenica",
+];
+
+const initialPlan = {
+  "Lunedì": { breakfast: "", midMorning: "", lunch: "", afternoonSnack: "", dinner: "" },
+  "Martedì": { breakfast: "", midMorning: "", lunch: "", afternoonSnack: "", dinner: "" },
+  "Mercoledì": { breakfast: "", midMorning: "", lunch: "", afternoonSnack: "", dinner: "" },
+  "Giovedì": { breakfast: "", midMorning: "", lunch: "", afternoonSnack: "", dinner: "" },
+  "Venerdì": { breakfast: "", midMorning: "", lunch: "", afternoonSnack: "", dinner: "" },
+  "Sabato": { breakfast: "", midMorning: "", lunch: "", afternoonSnack: "", dinner: "" },
+  "Domenica": { breakfast: "", midMorning: "", lunch: "", afternoonSnack: "", dinner: "" },
+};
+
+function Dieta() {
   const { userId } = useParams();
   const navigate = useNavigate();
   const storageKey = `dietPlan-${userId}`;
 
   const [userName, setUserName] = useState("");
-  const [showAIDiet, setShowAIDiet] = useState(false);
-
-  // Piano dietetico iniziale
-  const initialPlan = {
-    Monday: { breakfast: "", midMorning: "", lunch: "", afternoonSnack: "", dinner: "" },
-    Tuesday: { breakfast: "", midMorning: "", lunch: "", afternoonSnack: "", dinner: "" },
-    Wednesday: { breakfast: "", midMorning: "", lunch: "", afternoonSnack: "", dinner: "" },
-    Thursday: { breakfast: "", midMorning: "", lunch: "", afternoonSnack: "", dinner: "" },
-    Friday: { breakfast: "", midMorning: "", lunch: "", afternoonSnack: "", dinner: "" },
-    Saturday: { breakfast: "", midMorning: "", lunch: "", afternoonSnack: "", dinner: "" },
-    Sunday: { breakfast: "", midMorning: "", lunch: "", afternoonSnack: "", dinner: "" },
-  };
-
   const [plan, setPlan] = useState(() => {
     const savedPlan = localStorage.getItem(storageKey);
     return savedPlan ? JSON.parse(savedPlan) : initialPlan;
   });
+  const [selectedDay, setSelectedDay] = useState(daysOfWeek[0]);
 
   useEffect(() => {
     const savedUsers = localStorage.getItem("users");
     if (savedUsers) {
       const users = JSON.parse(savedUsers);
-      const currentUser = users.find(u => u.id === parseInt(userId, 10));
+      const currentUser = users.find((u) => u.id === parseInt(userId, 10));
       if (currentUser) setUserName(currentUser.name);
     }
   }, [userId]);
 
   useEffect(() => {
-    localStorage.setItem(storageKey, JSON.stringify(plan));
+    // Assicurati che per ogni giorno esista un piano; in caso contrario usa l'initialPlan
+    const mergedPlan = { ...initialPlan, ...plan };
+    setPlan(mergedPlan);
+    localStorage.setItem(storageKey, JSON.stringify(mergedPlan));
   }, [plan, storageKey]);
 
-  const handleChange = (day, meal, value) => {
+  // Se il piano per il giorno selezionato non esiste, usa un default
+  const currentDayPlan = plan[selectedDay] || { breakfast: "", midMorning: "", lunch: "", afternoonSnack: "", dinner: "" };
+
+  // Aggiorna il piano per il giorno selezionato
+  const handleChange = (meal, value) => {
     setPlan(prevPlan => ({
       ...prevPlan,
-      [day]: {
-        ...prevPlan[day],
+      [selectedDay]: {
+        ...currentDayPlan,
         [meal]: value,
       },
     }));
@@ -118,22 +138,31 @@ const Dieta = () => {
       <h2 style={titleStyle}>
         {userName ? `Piano Dietetico per ${userName}` : `Piano Dietetico per Utente ${userId}`}
       </h2>
-      
-      {/* Pulsante per attivare/disattivare l'AI Dieta */}
+      {/* Componente AI Dieta */}
       <div style={{ textAlign: "center", marginBottom: "20px" }}>
-        <button onClick={() => setShowAIDiet(!showAIDiet)} style={primaryButtonStyle}>
-          {showAIDiet ? "Nascondi AI Dieta" : "AI Dieta"}
-        </button>
+        <DietaAI />
       </div>
-      
-      {/* Sezione AI Dieta */}
-      {showAIDiet && <DietaAI />}
-      
-      {/* Interfaccia della dieta (tabella) */}
+      {/* Selettore per il giorno */}
+      <div style={{ textAlign: "center", marginBottom: "20px" }}>
+        <label style={{ fontWeight: "bold", marginRight: "10px" }}>
+          Seleziona giorno:
+        </label>
+        <select
+          value={selectedDay}
+          onChange={(e) => setSelectedDay(e.target.value)}
+          style={selectStyle}
+        >
+          {daysOfWeek.map((day) => (
+            <option key={day} value={day}>
+              {day}
+            </option>
+          ))}
+        </select>
+      </div>
+      {/* Tabella del piano per il giorno selezionato */}
       <table style={tableStyle}>
         <thead>
           <tr>
-            <th style={thStyle}>Giorno</th>
             <th style={thStyle}>Colazione</th>
             <th style={thStyle}>Spuntino Mattutino</th>
             <th style={thStyle}>Pranzo</th>
@@ -142,60 +171,57 @@ const Dieta = () => {
           </tr>
         </thead>
         <tbody>
-          {Object.keys(plan).map((day) => (
-            <tr key={day}>
-              <td style={tdStyle}>{day}</td>
-              <td style={tdStyle}>
-                <input
-                  type="text"
-                  value={plan[day].breakfast}
-                  onChange={(e) => handleChange(day, "breakfast", e.target.value)}
-                  placeholder="Inserisci colazione"
-                  style={inputStyle}
-                />
-              </td>
-              <td style={tdStyle}>
-                <input
-                  type="text"
-                  value={plan[day].midMorning}
-                  onChange={(e) => handleChange(day, "midMorning", e.target.value)}
-                  placeholder="Inserisci spuntino mattutino"
-                  style={inputStyle}
-                />
-              </td>
-              <td style={tdStyle}>
-                <input
-                  type="text"
-                  value={plan[day].lunch}
-                  onChange={(e) => handleChange(day, "lunch", e.target.value)}
-                  placeholder="Inserisci pranzo"
-                  style={inputStyle}
-                />
-              </td>
-              <td style={tdStyle}>
-                <input
-                  type="text"
-                  value={plan[day].afternoonSnack}
-                  onChange={(e) => handleChange(day, "afternoonSnack", e.target.value)}
-                  placeholder="Inserisci spuntino pomeridiano"
-                  style={inputStyle}
-                />
-              </td>
-              <td style={tdStyle}>
-                <input
-                  type="text"
-                  value={plan[day].dinner}
-                  onChange={(e) => handleChange(day, "dinner", e.target.value)}
-                  placeholder="Inserisci cena"
-                  style={inputStyle}
-                />
-              </td>
-            </tr>
-          ))}
+          <tr>
+            <td style={tdStyle}>
+              <input
+                type="text"
+                value={currentDayPlan.breakfast}
+                onChange={(e) => handleChange("breakfast", e.target.value)}
+                placeholder="Inserisci colazione"
+                style={inputStyle}
+              />
+            </td>
+            <td style={tdStyle}>
+              <input
+                type="text"
+                value={currentDayPlan.midMorning}
+                onChange={(e) => handleChange("midMorning", e.target.value)}
+                placeholder="Inserisci spuntino mattutino"
+                style={inputStyle}
+              />
+            </td>
+            <td style={tdStyle}>
+              <input
+                type="text"
+                value={currentDayPlan.lunch}
+                onChange={(e) => handleChange("lunch", e.target.value)}
+                placeholder="Inserisci pranzo"
+                style={inputStyle}
+              />
+            </td>
+            <td style={tdStyle}>
+              <input
+                type="text"
+                value={currentDayPlan.afternoonSnack}
+                onChange={(e) => handleChange("afternoonSnack", e.target.value)}
+                placeholder="Inserisci spuntino pomeridiano"
+                style={inputStyle}
+              />
+            </td>
+            <td style={tdStyle}>
+              <input
+                type="text"
+                value={currentDayPlan.dinner}
+                onChange={(e) => handleChange("dinner", e.target.value)}
+                placeholder="Inserisci cena"
+                style={inputStyle}
+              />
+            </td>
+          </tr>
         </tbody>
       </table>
     </div>
   );
-};
+}
 
 export default Dieta;
